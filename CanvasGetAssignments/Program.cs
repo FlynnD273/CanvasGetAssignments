@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 class Program
 {
@@ -15,43 +16,25 @@ class Program
 
     static async Task Main(string[] args)
     {
-        string[] settings = new string[] { };
-        if (File.Exists("settings.txt"))
-        {
-            settings = File.ReadAllLines("settings.txt");
-        }
-        else
-        {
-            File.WriteAllText("settings.txt", "API Key: <Paste your Canvas API key here>\n" +
-                                              "Output Path: <Path to the text file to output to>\n" +
-                                              "Header: <The line of text to add the assignments afer>\n");
-        }
+        _LoadSettings();
 
-        Dictionary<string, string> settingsDict = new();
-        foreach (string line in settings)
+        // Check for invalid output path
+        if (Regex.IsMatch(_notePath, $"[{new string(Path.GetInvalidPathChars())}]\"[{new string(Path.GetInvalidFileNameChars())}]"))
         {
-            if (line.Contains(':'))
-            {
-                string[] setting = line.Split(':');
-                settingsDict.Add(setting[0].Trim(), string.Join(":", setting.Skip(1)).Trim());
-            }
-        }
-
-        if (settingsDict.TryGetValue("API Key", out string apiKey))
-        {
-            _canvasApiKey = apiKey;
-        }
-        if (settingsDict.TryGetValue("Output Path", out string path))
-        {
-            _notePath = path;
-        }
-        if (settingsDict.TryGetValue("Header", out string header))
-        {
-            _header = header;
+            Console.WriteLine("Invalid output path name.");
+            _Quit();
         }
 
         // Get enrolled courses
-        string courseJson = await _CanvasAPICall("courses?per_page=200");
+        string courseJson = null;
+        try
+        {
+            courseJson = await _CanvasAPICall("courses?per_page=200");
+        }
+        catch (CanvasApiException e)
+        {
+            _HandleCanvasApiException(e);
+        }
 
         // Filter courses by term id. A22 term is 186
         Course[] currentCourses = JsonSerializer.Deserialize<Course[]>(courseJson);
@@ -68,7 +51,15 @@ class Program
             Console.WriteLine("| Assignments");
 
             // Get all assignments for the course
-            string assignmentJson = await _CanvasAPICall($"courses/{course.Id}/assignments?per_page=200");
+            string assignmentJson = null;
+            try
+            {
+                assignmentJson = await _CanvasAPICall($"courses/{course.Id}/assignments?per_page=200");
+            }
+            catch (CanvasApiException e)
+            {
+                _HandleCanvasApiException(e);
+            }
             course.Assignments = JsonSerializer.Deserialize<Assignment[]>(assignmentJson);
 
             foreach (Assignment assignment in course.Assignments)
@@ -83,7 +74,15 @@ class Program
             Console.WriteLine("| Modules");
 
             // Get all modules in the course
-            string modulesJson = await _CanvasAPICall($"courses/{course.Id}/modules?per_page=200");
+            string modulesJson = null;
+            try
+            {
+                modulesJson = await _CanvasAPICall($"courses/{course.Id}/modules?per_page=200");
+            }
+            catch (CanvasApiException e)
+            {
+                _HandleCanvasApiException(e);
+            }
             course.Modules = JsonSerializer.Deserialize<Module[]>(modulesJson);
 
             foreach (Module module in course.Modules)
@@ -91,7 +90,15 @@ class Program
                 Console.WriteLine($"| | {module.Name}");
 
                 // Get all items in the module
-                string itemsJson = await _CanvasAPICall($"courses/{course.Id}/modules/{module.Id}/items?per_page=200");
+                string itemsJson = null;
+                try
+                {
+                    itemsJson = await _CanvasAPICall($"courses/{course.Id}/modules/{module.Id}/items?per_page=200");
+                }
+                catch (CanvasApiException e)
+                {
+                    _HandleCanvasApiException(e);
+                }
                 module.Items = JsonSerializer.Deserialize<ModuleItem[]>(itemsJson);
 
                 foreach (ModuleItem item in module.Items.Where(x => x.Type == "Assignment"))
@@ -110,8 +117,16 @@ class Program
         // Get the contents of my todo list file
         List<string> fileContents = File.ReadAllLines(_notePath).ToList();
         int index = fileContents.FindIndex(0, fileContents.Count, x => x == _header);
+        if (string.IsNullOrEmpty(_header))
+        {
+            index = 0;
+        }
 
-        if (index < 0) return;
+        if (index < 0)
+        {
+            Console.WriteLine($"Could not find line \"{_header}\"");
+            _Quit();
+        }
 
         StringBuilder sb = new();
 
@@ -151,10 +166,55 @@ class Program
         // Write back to the todo file
         File.WriteAllText(_notePath, sb.ToString());
 
-        Quit();
+        _Quit();
     }
 
-    private static void Quit()
+    private static void _LoadSettings()
+    {
+        string[] settings = new string[] { };
+        if (File.Exists("settings.txt"))
+        {
+            settings = File.ReadAllLines("settings.txt");
+        }
+        else
+        {
+            File.WriteAllText("settings.txt", "API Key: <Paste your Canvas API key here>\n" +
+                                              "Output Path: <Path to the text file to output to>\n" +
+                                              "Header: <The line of text to add the assignments afer>\n");
+        }
+
+        Dictionary<string, string> settingsDict = new();
+        foreach (string line in settings)
+        {
+            if (line.Contains(':'))
+            {
+                string[] setting = line.Split(':');
+                settingsDict.Add(setting[0].Trim(), string.Join(":", setting.Skip(1)).Trim());
+            }
+        }
+
+        if (settingsDict.TryGetValue("API Key", out string apiKey))
+        {
+            _canvasApiKey = apiKey;
+        }
+        if (settingsDict.TryGetValue("Output Path", out string path))
+        {
+            _notePath = path;
+        }
+        if (settingsDict.TryGetValue("Header", out string header))
+        {
+            _header = header;
+        }
+    }
+
+    private static void _HandleCanvasApiException(CanvasApiException e)
+    {
+        Console.WriteLine("An error has occurred while calling the Canvas API:");
+        Console.WriteLine(string.Join("\n", (IEnumerable<Error>)e.Error.Errors));
+        _Quit();
+    }
+
+    private static void _Quit()
     {
         Console.WriteLine("Done. Press Enter to exit...");
         Console.ReadLine();
@@ -172,6 +232,10 @@ class Program
 
         var result = await client.SendAsync(request);
         var content = await result.Content.ReadAsStringAsync();
+        if (content.StartsWith("{\"errors\":"))
+        {
+            throw new CanvasApiException(content);
+        }
         return content;
     }
 }
