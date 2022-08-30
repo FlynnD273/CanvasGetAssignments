@@ -13,8 +13,8 @@ This tool will remove everything after the header in the file, and replace it wi
 
 ## Command-Line Arguments
 
-| Flag            | Usage                                                              |
-| --------------- | ------------------------------------------------------------------ |
+| Flag | Usage |
+| ---- | ----- |
 | `-s`,`--silent` | When the program ends, exit without prompting for user interaction |
 
 
