@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace CanvasGetAssignments
+namespace CanvasGetAssignments.JsonObjects
 {
     internal class Course
     {
