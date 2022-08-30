@@ -13,10 +13,11 @@ class Program
     private static string _notePath;
     private static string _header;
     private static string _canvasApiKey;
+    private static bool _isSilent = false;
 
     static async Task Main(string[] args)
     {
-        _LoadSettings();
+        _LoadSettings(args);
 
         // Check for invalid output path
         if (Regex.IsMatch(_notePath, $"[{new string(Path.GetInvalidPathChars())}]\"[{new string(Path.GetInvalidFileNameChars())}]"))
@@ -169,8 +170,13 @@ class Program
         _Quit();
     }
 
-    private static void _LoadSettings()
+    private static void _LoadSettings(string[] args)
     {
+        if (args.Contains("--silent") || args.Contains("-s"))
+        {
+            _isSilent = true;
+        }
+
         string[] settings = new string[] { };
         if (File.Exists("settings.txt"))
         {
@@ -216,8 +222,12 @@ class Program
 
     private static void _Quit()
     {
-        Console.WriteLine("Done. Press Enter to exit...");
-        Console.ReadLine();
+        if (!_isSilent)
+        {
+            Console.WriteLine("Done. Press Enter to exit...");
+            Console.ReadLine();
+        }
+        
         Environment.Exit(0);
     }
 
