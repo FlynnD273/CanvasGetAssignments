@@ -136,7 +136,14 @@ class Program
         sb.AppendLine();
 
         // Find all uncompleted future assignments
-        IEnumerable<Assignment> assignments = currentCourses.SelectMany(x => x.Assignments).Where(x => !x.Submitted && x.DueAt > DateTime.Now && (!contentIdToModuleItem.ContainsKey(x.Id) || !(contentIdToModuleItem[x.Id]?.CompletionRequirement?.IsCompleted ?? false)));
+        IEnumerable<Assignment> assignments = from course in currentCourses
+                                              from assignment in course.Assignments
+                                              where !assignment.Submitted &&
+                                              assignment.DueAt > DateTime.Now &&
+                                              (!contentIdToModuleItem.ContainsKey(assignment.Id) ||
+                                                !(contentIdToModuleItem[assignment.Id]?.CompletionRequirement?.IsCompleted ?? false))
+                                              orderby assignment.Course.Name, assignment.DueAt
+                                              select assignment;
 
         Console.WriteLine("***** Future Assignments *****");
         Console.WriteLine();
