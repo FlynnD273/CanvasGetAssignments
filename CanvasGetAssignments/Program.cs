@@ -186,7 +186,7 @@ class Program
         {
             File.WriteAllText("settings.txt", "API Key: <Paste your Canvas API key here>\n" +
                                               "Output Path: <Path to the text file to output to>\n" +
-                                              "Header: <The line of text to add the assignments afer>\n");
+                                              "Header: <The line of text to add the assignments after>\n");
         }
 
         Dictionary<string, string> settingsDict = new();
