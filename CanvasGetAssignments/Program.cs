@@ -10,6 +10,7 @@ class Program
     private static string _notePath;
     private static string _header;
     private static string _canvasApiKey;
+    private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
     private static bool _isSilent = false;
 
     static async Task Main(string[] args)
@@ -59,6 +60,7 @@ class Program
                 _HandleCanvasApiException(e);
             }
             course.Assignments = JsonSerializer.Deserialize<Assignment[]>(assignmentJson);
+
 
             foreach (Assignment assignment in course.Assignments)
             {
@@ -161,7 +163,7 @@ class Program
                 Console.WriteLine($"| {assignment.Name}");
 
                 // Add the assignment as a checkbox so I can check off items temporarily
-                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{assignment.DueAt.ToString("MM/dd ddd")}]  ");
+                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt, _timeZone).ToString("MM/dd ddd hh:mm tt")}]  ");
             }
             Console.WriteLine();
 
@@ -214,6 +216,18 @@ class Program
         if (settingsDict.TryGetValue("Header", out string header))
         {
             _header = header;
+        }
+        if (settingsDict.TryGetValue("Time Zone", out string tz) && string.IsNullOrEmpty(tz))
+        {
+            try
+            {
+                _timeZone = TimeZoneInfo.FindSystemTimeZoneById(tz);
+            }
+            catch (TimeZoneNotFoundException e)
+            {
+                Console.WriteLine($"Time zone \"{tz}\" was not found on the local system.");
+                _Quit();
+            }
         }
     }
 
