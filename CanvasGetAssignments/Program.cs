@@ -1,5 +1,6 @@
 ﻿using CanvasGetAssignments.JsonObjects;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -7,21 +8,34 @@ using System.Text.RegularExpressions;
 class Program
 {
     private static readonly HttpClient client = new();
-    private static string _notePath;
+    private static string _outputPath;
     private static string _header;
     private static string _canvasApiKey;
     private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
     private static bool _isSilent = false;
+    private static bool _isSilentOnException = false;
+
+    private enum ExitState
+    {
+        Successful = 0,
+        InvalidPathException,
+        CanvasApiException,
+        NoHeaderException,
+        FileWriteException,
+        TimeZoneException,
+        ApiKeyMissingException,
+        OutputPathMissingException,
+    }
 
     static async Task Main(string[] args)
     {
         _LoadSettings(args);
 
         // Check for invalid output path
-        if (Regex.IsMatch(_notePath, $"[{new string(Path.GetInvalidPathChars())}]\"[{new string(Path.GetInvalidFileNameChars())}]"))
+        if (Regex.IsMatch(_outputPath, $"[{new string(Path.GetInvalidPathChars())}]\"[{new string(Path.GetInvalidFileNameChars())}]"))
         {
             Console.WriteLine("Invalid output path name.");
-            _Quit();
+            _Quit(ExitState.InvalidPathException);
         }
 
         // Get enrolled courses
@@ -30,7 +44,7 @@ class Program
         {
             courseJson = await _CanvasAPICall("courses?per_page=200");
         }
-        catch (CanvasApiException e)
+        catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
         {
             _HandleCanvasApiException(e);
         }
@@ -55,7 +69,7 @@ class Program
             {
                 assignmentJson = await _CanvasAPICall($"courses/{course.Id}/assignments?per_page=200");
             }
-            catch (CanvasApiException e)
+            catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
             {
                 _HandleCanvasApiException(e);
             }
@@ -79,10 +93,11 @@ class Program
             {
                 modulesJson = await _CanvasAPICall($"courses/{course.Id}/modules?per_page=200");
             }
-            catch (CanvasApiException e)
+            catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
             {
                 _HandleCanvasApiException(e);
             }
+
             course.Modules = JsonSerializer.Deserialize<Module[]>(modulesJson);
 
             foreach (Module module in course.Modules)
@@ -95,10 +110,11 @@ class Program
                 {
                     itemsJson = await _CanvasAPICall($"courses/{course.Id}/modules/{module.Id}/items?per_page=200");
                 }
-                catch (CanvasApiException e)
+                catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
                 {
                     _HandleCanvasApiException(e);
                 }
+
                 module.Items = JsonSerializer.Deserialize<ModuleItem[]>(itemsJson);
 
                 foreach (ModuleItem item in module.Items.Where(x => x.Type == "Assignment"))
@@ -115,7 +131,17 @@ class Program
         }
 
         // Get the contents of my todo list file
-        List<string> fileContents = File.ReadAllLines(_notePath).ToList();
+        List<string> fileContents = new();
+
+        if (File.Exists(_outputPath))
+        {
+            fileContents = File.ReadAllLines(_outputPath).ToList();
+        }
+        else if (!string.IsNullOrEmpty(_header))
+        {
+            fileContents.Add(_header);
+        }
+
         int index = fileContents.FindIndex(0, fileContents.Count, x => x == _header);
         if (string.IsNullOrEmpty(_header))
         {
@@ -125,7 +151,7 @@ class Program
         if (index < 0)
         {
             Console.WriteLine($"Could not find line \"{_header}\"");
-            _Quit();
+            _Quit(ExitState.NoHeaderException);
         }
 
         StringBuilder sb = new();
@@ -170,10 +196,18 @@ class Program
             sb.AppendLine();
         }
 
-        // Write back to the todo file
-        File.WriteAllText(_notePath, sb.ToString());
+        try
+        {
+            // Write back to the todo file
+            File.WriteAllText(_outputPath, sb.ToString());
+        }
+        catch (IOException e)
+        {
+            Console.WriteLine($"Error while writing file {_outputPath}\n{e.Message}");
+            _Quit(ExitState.FileWriteException);
+        }
 
-        _Quit();
+        _Quit(ExitState.Successful);
     }
 
     private static void _LoadSettings(string[] args)
@@ -181,6 +215,11 @@ class Program
         if (args.Contains("--silent") || args.Contains("-s"))
         {
             _isSilent = true;
+        }
+        if (args.Contains("--silentExceptions") || args.Contains("-se"))
+        {
+            _isSilent = true;
+            _isSilentOnException = true;
         }
 
         string[] settings = new string[] { };
@@ -211,7 +250,7 @@ class Program
         }
         if (settingsDict.TryGetValue("Output Path", out string path))
         {
-            _notePath = path;
+            _outputPath = path;
         }
         if (settingsDict.TryGetValue("Header", out string header))
         {
@@ -225,28 +264,39 @@ class Program
             }
             catch (TimeZoneNotFoundException e)
             {
-                Console.WriteLine($"Time zone \"{tz}\" was not found on the local system.");
-                _Quit();
+                Console.WriteLine($"Time zone \"{tz}\" was not found on the local system.\n{e.Message}");
+                _Quit(ExitState.TimeZoneException);
             }
+        }
+
+        if (string.IsNullOrEmpty(_canvasApiKey))
+        {
+            Console.WriteLine("No API key has been set.");
+            _Quit(ExitState.ApiKeyMissingException);
+        }
+        if (string.IsNullOrEmpty(_outputPath))
+        {
+            Console.WriteLine("No output path has been set.");
+            _Quit(ExitState.OutputPathMissingException);
         }
     }
 
-    private static void _HandleCanvasApiException(CanvasApiException e)
+    private static void _HandleCanvasApiException(Exception e)
     {
         Console.WriteLine("An error has occurred while calling the Canvas API:");
-        Console.WriteLine(string.Join("\n", (IEnumerable<Error>)e.Error.Errors));
-        _Quit();
+        Console.WriteLine(e.Message);
+        _Quit(ExitState.CanvasApiException);
     }
 
-    private static void _Quit()
+    private static void _Quit(ExitState exitCode)
     {
-        if (!_isSilent)
+        if (!_isSilent || (exitCode != ExitState.Successful && !_isSilentOnException))
         {
             Console.WriteLine("Done. Press Enter to exit...");
             Console.ReadLine();
         }
-        
-        Environment.Exit(0);
+
+        Environment.Exit((int)exitCode);
     }
 
     private static async Task<string> _CanvasAPICall(string call)
@@ -258,11 +308,20 @@ class Program
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _canvasApiKey);
 
-        var result = await client.SendAsync(request);
+        HttpResponseMessage result;
+        try
+        {
+            result = await client.SendAsync(request);
+        }
+        catch (HttpRequestException e)
+        {
+            throw;
+        }
+
         var content = await result.Content.ReadAsStringAsync();
         if (content.StartsWith("{\"errors\":"))
         {
-            throw new CanvasApiException(content);
+            throw CanvasApiException.FromJson(content);
         }
         return content;
     }

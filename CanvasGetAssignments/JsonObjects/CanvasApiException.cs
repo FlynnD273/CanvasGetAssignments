@@ -9,11 +9,13 @@ namespace CanvasGetAssignments.JsonObjects
 {
     internal class CanvasApiException : Exception
     {
-        public ErrorResponse Error { get; }
+        private CanvasApiException () { }
+        private CanvasApiException (string message) : base(message) { }
 
-        public CanvasApiException(string errorMessage)
+        public static CanvasApiException FromJson(string errorMessage)
         {
-            Error = JsonSerializer.Deserialize<ErrorResponse>(errorMessage);
+            ErrorResponse error = JsonSerializer.Deserialize<ErrorResponse>(errorMessage);
+            return new CanvasApiException(string.Join("\n", (IEnumerable<Error>)error.Errors));
         }
     }
 }
