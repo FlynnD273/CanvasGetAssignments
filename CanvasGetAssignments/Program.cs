@@ -78,7 +78,13 @@ class Program
 
             foreach (Assignment assignment in course.Assignments)
             {
-                Console.WriteLine($"| | {assignment.Name} - Due:{assignment.DueAt.ToString("MM-dd ddd")}");
+                string due = "NO DUE DATE";
+                if (assignment.DueAt != null)
+                {
+                    due = assignment.DueAt.Value.ToString("MM-dd ddd");
+                }
+
+                Console.WriteLine($"| | {assignment.Name} - Due:{due}");
 
                 // Set the parent course property in each assignment
                 assignment.Course = course;
@@ -188,8 +194,14 @@ class Program
             {
                 Console.WriteLine($"| {assignment.Name}");
 
+                string due = "NO DUE DATE";
+                if (assignment.DueAt != null)
+                {
+                    due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt.Value, _timeZone).ToString("MM/dd ddd hh:mm tt");
+                }
+
                 // Add the assignment as a checkbox so I can check off items temporarily
-                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt, _timeZone).ToString("MM/dd ddd hh:mm tt")}]  ");
+                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{due}]  ");
             }
             Console.WriteLine();
 

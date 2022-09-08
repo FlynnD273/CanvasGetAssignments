@@ -14,7 +14,7 @@ namespace CanvasGetAssignments.JsonObjects
         [JsonPropertyName("id")]
         public int Id { get; set; }
         [JsonPropertyName("due_at")]
-        public DateTime DueAt { get; set; }
+        public DateTime? DueAt { get; set; }
         [JsonPropertyName("allowed_attempts")]
         public int AllowedAttempts { get; set; }
         [JsonPropertyName("html_url")]
