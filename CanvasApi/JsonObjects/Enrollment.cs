@@ -5,9 +5,9 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace CanvasGetAssignments.JsonObjects
+namespace CanvasApi.JsonObjects
 {
-    internal class Enrollment
+    public class Enrollment
     {
         [JsonPropertyName("type")]
         public string Type { get; set; }

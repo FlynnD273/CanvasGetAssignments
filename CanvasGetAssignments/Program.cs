@@ -1,19 +1,17 @@
-﻿using CanvasGetAssignments.JsonObjects;
-using System.Net.Http.Headers;
-using System.Net.Sockets;
+﻿using CanvasApi;
+using CanvasApi.JsonObjects;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 class Program
 {
-    private static readonly HttpClient client = new();
     private static string _outputPath;
     private static string _header;
-    private static string _canvasApiKey;
     private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
     private static bool _isSilent = false;
     private static bool _isSilentOnException = false;
+    private static CanvasApiCaller _caller;
 
     private enum ExitState
     {
@@ -42,7 +40,7 @@ class Program
         string courseJson = null;
         try
         {
-            courseJson = await _CanvasAPICall("courses?per_page=200");
+            courseJson = await _caller.Call("courses?per_page=200");
         }
         catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
         {
@@ -67,7 +65,7 @@ class Program
             string assignmentJson = null;
             try
             {
-                assignmentJson = await _CanvasAPICall($"courses/{course.Id}/assignments?per_page=200");
+                assignmentJson = await _caller.Call($"courses/{course.Id}/assignments?per_page=200");
             }
             catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
             {
@@ -97,7 +95,7 @@ class Program
             string modulesJson = null;
             try
             {
-                modulesJson = await _CanvasAPICall($"courses/{course.Id}/modules?per_page=200");
+                modulesJson = await _caller.Call($"courses/{course.Id}/modules?per_page=200");
             }
             catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
             {
@@ -114,7 +112,7 @@ class Program
                 string itemsJson = null;
                 try
                 {
-                    itemsJson = await _CanvasAPICall($"courses/{course.Id}/modules/{module.Id}/items?per_page=200");
+                    itemsJson = await _caller.Call($"courses/{course.Id}/modules/{module.Id}/items?per_page=200");
                 }
                 catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
                 {
@@ -258,7 +256,7 @@ class Program
 
         if (settingsDict.TryGetValue("API Key", out string apiKey))
         {
-            _canvasApiKey = apiKey;
+            _caller = new(apiKey);
         }
         if (settingsDict.TryGetValue("Output Path", out string path))
         {
@@ -281,7 +279,7 @@ class Program
             }
         }
 
-        if (string.IsNullOrEmpty(_canvasApiKey))
+        if (_caller == null)
         {
             Console.WriteLine("No API key has been set.");
             _Quit(ExitState.ApiKeyMissingException);
@@ -309,33 +307,6 @@ class Program
         }
 
         Environment.Exit((int)exitCode);
-    }
-
-    private static async Task<string> _CanvasAPICall(string call)
-    {
-        HttpRequestMessage request = new()
-        {
-            RequestUri = new(@"https://canvas.wpi.edu/api/v1/" + call),
-            Method = HttpMethod.Get,
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _canvasApiKey);
-
-        HttpResponseMessage result;
-        try
-        {
-            result = await client.SendAsync(request);
-        }
-        catch (HttpRequestException e)
-        {
-            throw;
-        }
-
-        var content = await result.Content.ReadAsStringAsync();
-        if (content.StartsWith("{\"errors\":"))
-        {
-            throw CanvasApiException.FromJson(content);
-        }
-        return content;
     }
 }
 

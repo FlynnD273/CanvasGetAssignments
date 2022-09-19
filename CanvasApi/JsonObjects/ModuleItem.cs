@@ -5,9 +5,9 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace CanvasGetAssignments.JsonObjects
+namespace CanvasApi.JsonObjects
 {
-    internal class ModuleItem
+    public class ModuleItem
     {
         [JsonPropertyName("id")]
         public int Id { get; set; }

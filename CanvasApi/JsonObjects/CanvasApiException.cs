@@ -5,9 +5,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CanvasGetAssignments.JsonObjects
+namespace CanvasApi.JsonObjects
 {
-    internal class CanvasApiException : Exception
+    public class CanvasApiException : Exception
     {
         private CanvasApiException () { }
         private CanvasApiException (string message) : base(message) { }
