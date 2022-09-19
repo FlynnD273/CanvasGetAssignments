@@ -166,6 +166,8 @@ class Program
             sb.AppendLine(fileContents[i]);
         }
         sb.AppendLine();
+        sb.AppendLine($"last updated at `{DateTime.Now:ddd, MM/dd hh:mm tt}`");
+        sb.AppendLine();
 
         // Find all uncompleted future assignments
         IEnumerable<Assignment> assignments = from course in currentCourses
@@ -195,7 +197,7 @@ class Program
                 string due = "NO DUE DATE";
                 if (assignment.DueAt != null)
                 {
-                    due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt.Value, _timeZone).ToString("MM/dd ddd hh:mm tt");
+                    due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt.Value, _timeZone).ToString("ddd, MM/dd hh:mm tt");
                 }
 
                 // Add the assignment as a checkbox so I can check off items temporarily
