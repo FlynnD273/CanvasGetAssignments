@@ -123,10 +123,17 @@ class Program
 
                 foreach (ModuleItem item in module.Items.Where(x => x.Type == "Assignment"))
                 {
-                    Console.WriteLine($"| | | {item.Title}");
+                    Console.Write($"| | | {item.Title}");
 
                     // Add the assignment module items to the dictionary for cross-referencing
-                    contentIdToModuleItem.Add(item.ContentId, item);
+                    if(contentIdToModuleItem.TryAdd(item.ContentId, item))
+                    {
+                        Console.WriteLine(" SKIPPED");
+                    }
+                    else
+                    {
+                        Console.WriteLine();
+                    }
                 }
             }
 
@@ -135,18 +142,32 @@ class Program
         }
 
         // Get the contents of my todo list file
-        List<string> fileContents = new();
+        List<string> fileContent = new();
 
         if (File.Exists(_outputPath))
         {
-            fileContents = File.ReadAllLines(_outputPath).ToList();
+            fileContent = File.ReadAllLines(_outputPath).ToList();
         }
         else if (!string.IsNullOrEmpty(_header))
         {
-            fileContents.Add(_header);
+            fileContent.Add(_header);
         }
 
-        int index = fileContents.FindIndex(0, fileContents.Count, x => x == _header);
+        string weeklyContent = null;
+        bool weekly = DateTime.Now.DayOfWeek == DayOfWeek.Monday && File.Exists("weekly.txt");
+        string weeklyHeader = null;
+
+        if (weekly)
+        {
+            var lines = File.ReadAllLines("weekly.txt");
+            weeklyContent = string.Join("\n", lines);
+            weeklyHeader = lines[0];
+        }
+
+
+        int index = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
+        int weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == weeklyHeader);
+
         if (string.IsNullOrEmpty(_header))
         {
             index = 0;
@@ -161,10 +182,23 @@ class Program
         StringBuilder sb = new();
 
         // Only replace content after the "Assignments" header
-        for (int i = 0; i <= index; i++)
+        int trimIndex = index;
+        if (weekly)
         {
-            sb.AppendLine(fileContents[i]);
+            trimIndex = weeklyIndex;
         }
+        for (int i = 0; i < trimIndex; i++)
+        {
+            sb.AppendLine(fileContent[i]);
+        }
+
+        if(weekly && weeklyIndex < index)
+        {
+            sb.AppendLine(weeklyContent);
+            sb.AppendLine();
+        }
+
+        sb.AppendLine(_header);
         sb.AppendLine();
         sb.AppendLine($"last updated at `{DateTime.Now:ddd, MM/dd hh:mm tt}`");
         sb.AppendLine();
