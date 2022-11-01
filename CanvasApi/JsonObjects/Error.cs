@@ -12,9 +12,6 @@ namespace CanvasApi.JsonObjects
         [JsonPropertyName("message")]
         public string Message { get; set; }
 
-        public override string ToString()
-        {
-            return Message;
-        }
+        public override string ToString() => Message;
     }
 }

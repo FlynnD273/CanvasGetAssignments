@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace CanvasApi.JsonObjects
 {
@@ -12,7 +13,7 @@ namespace CanvasApi.JsonObjects
         [JsonPropertyName("id")]
         public int Id { get; set; }
         [JsonPropertyName("title")]
-        public string Title { get; set; }
+        public string Name { get; set; }
         [JsonPropertyName("module_id")]
         public int ModuleId { get; set; }
         [JsonPropertyName("type")]
@@ -23,5 +24,7 @@ namespace CanvasApi.JsonObjects
         public string HtmlUrl { get; set; }
         [JsonPropertyName("completion_requirement")]
         public CompletionRequirement CompletionRequirement { get; set; }
+
+        public override string ToString() => Name;
     }
 }

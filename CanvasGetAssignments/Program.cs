@@ -123,7 +123,7 @@ class Program
 
                 foreach (ModuleItem item in module.Items.Where(x => x.Type == "Assignment"))
                 {
-                    Console.Write($"| | | {item.Title}");
+                    Console.Write($"| | | {item.Name}");
 
                     // Add the assignment module items to the dictionary for cross-referencing
                     if(contentIdToModuleItem.TryAdd(item.ContentId, item))
@@ -207,16 +207,15 @@ class Program
         IEnumerable<Assignment> assignments = from course in currentCourses
                                               from assignment in course.Assignments
                                               where !assignment.Submitted &&
-                                              assignment.DueAt > DateTime.Now &&
+                                              (assignment.DueAt == null || assignment.DueAt > DateTime.Now) &&
                                               (!contentIdToModuleItem.ContainsKey(assignment.Id) ||
                                                 !(contentIdToModuleItem[assignment.Id]?.CompletionRequirement?.IsCompleted ?? false))
-                                              orderby assignment.Course.Name, assignment.DueAt
                                               select assignment;
 
         Console.WriteLine("***** Future Assignments *****");
         Console.WriteLine();
 
-        foreach (var courseGroup in assignments.GroupBy<Assignment, Course>(x => x.Course))
+        foreach (var courseGroup in assignments.Where(x => x.DueAt != null).OrderBy(x => x.DueAt).GroupBy<Assignment, Course>(x => x.Course))
         {
             Console.WriteLine($"== {courseGroup.Key.Name} ==");
 
@@ -228,14 +227,36 @@ class Program
             {
                 Console.WriteLine($"| {assignment.Name}");
 
-                string due = "NO DUE DATE";
-                if (assignment.DueAt != null)
-                {
-                    due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt.Value, _timeZone).ToString("ddd, MM/dd hh:mm tt");
-                }
-
+                string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt.Value, _timeZone).ToString("ddd, MM/dd hh:mm tt");
                 // Add the assignment as a checkbox so I can check off items temporarily
                 sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{due}]  ");
+            }
+            Console.WriteLine();
+
+            sb.AppendLine();
+        }
+
+        Console.WriteLine("***** Undated Assignments *****");
+
+        sb.AppendLine();
+        sb.AppendLine("## Undated Assignments");
+        sb.AppendLine();
+
+
+        foreach (var courseGroup in assignments.Where(x => x.DueAt == null).OrderBy(x => x.Name).GroupBy<Assignment, Course>(x => x.Course))
+        {
+            Console.WriteLine($"== {courseGroup.Key.Name} ==");
+
+            // Add a header for each course
+            sb.AppendLine($"#### {courseGroup.Key.Name}");
+            sb.AppendLine();
+
+            foreach (var assignment in courseGroup)
+            {
+                Console.WriteLine($"| {assignment.Name}");
+
+                // Add the assignment as a checkbox so I can check off items temporarily
+                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::NO DUE DATE]  ");
             }
             Console.WriteLine();
 

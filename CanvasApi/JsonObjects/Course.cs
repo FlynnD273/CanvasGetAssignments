@@ -29,5 +29,7 @@ namespace CanvasApi.JsonObjects
 
         [JsonIgnore]
         public Module[] Modules { get; set; }
+
+        public override string ToString() => Name;
     }
 }
