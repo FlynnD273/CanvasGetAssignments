@@ -7,10 +7,11 @@ There is a file called settings.txt that is generated in the same directory as t
 Change these lines to customize the behaviour of the program.  
 API Key: `Paste your Canvas API key here`  
 Output Path: `Path to the text file to output to`  
+Weekly: `The line of text that starts the weekly tasks section. This should be before the Header line`
 Header: `The line of text to add the assignments after`  
 Time Zone: `The time zone to convert to (remove this line to use the local time zone)`
 
-If you want a task list that refreshes on Monday, place the markdown checklist with a header in a file called `weekly.txt`. The program will search for the first line in the weekly file in the main file. Make sure this doesn't change. The weekly list must be before the assignments header.
+The weekly list must be before the assignments header. The weekly task section replaces all `[x]` with `[ ]` if the current day is Monday. 
 
 Warning!  
 This tool will remove everything after the header in the file, and replace it with the assignments checklist.

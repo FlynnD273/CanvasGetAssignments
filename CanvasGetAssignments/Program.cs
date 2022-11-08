@@ -6,8 +6,9 @@ using System.Text.RegularExpressions;
 
 class Program
 {
-    private static string _outputPath;
-    private static string _header;
+    private static string? _outputPath = null;
+    private static string? _header = null;
+    private static string? _weeklyHeader = null;
     private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
     private static bool _isSilent = false;
     private static bool _isSilentOnException = false;
@@ -153,20 +154,10 @@ class Program
             fileContent.Add(_header);
         }
 
-        string weeklyContent = null;
-        bool weekly = DateTime.Now.DayOfWeek == DayOfWeek.Monday && File.Exists("weekly.txt");
-        string weeklyHeader = null;
-
-        if (weekly)
-        {
-            var lines = File.ReadAllLines("weekly.txt");
-            weeklyContent = string.Join("\n", lines);
-            weeklyHeader = lines[0];
-        }
-
+        bool weekly = true;// DateTime.Now.DayOfWeek == DayOfWeek.Monday;
 
         int index = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
-        int weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == weeklyHeader);
+        int weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _weeklyHeader);
 
         if (string.IsNullOrEmpty(_header))
         {
@@ -191,11 +182,12 @@ class Program
         {
             sb.AppendLine(fileContent[i]);
         }
-
-        if(weekly && weeklyIndex < index)
+        if (weekly)
         {
-            sb.AppendLine(weeklyContent);
-            sb.AppendLine();
+            for (int i = weeklyIndex; i < index; i++)
+            {
+                sb.AppendLine(fileContent[i].Replace("[x]", "[ ]"));
+            }
         }
 
         sb.AppendLine(_header);
@@ -322,6 +314,10 @@ class Program
         if (settingsDict.TryGetValue("Header", out string header))
         {
             _header = header;
+        }
+        if (settingsDict.TryGetValue("Weekly", out string weekly))
+        {
+            _weeklyHeader = weekly;
         }
         if (settingsDict.TryGetValue("Time Zone", out string tz) && string.IsNullOrEmpty(tz))
         {
