@@ -154,7 +154,7 @@ class Program
             fileContent.Add(_header);
         }
 
-        bool weekly = true;// DateTime.Now.DayOfWeek == DayOfWeek.Monday;
+        bool weekly = DateTime.Now.DayOfWeek == DayOfWeek.Monday;
 
         int index = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
         int weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _weeklyHeader);
