@@ -6,13 +6,13 @@ using System.Text.RegularExpressions;
 
 class Program
 {
-    private static string? _outputPath = null;
+    private static string _outputPath = "";
     private static string? _header = null;
     private static string? _weeklyHeader = null;
     private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
     private static bool _isSilent = false;
     private static bool _isSilentOnException = false;
-    private static CanvasApiCaller _caller;
+    private static AssignmentBuilder _builder;
 
     private enum ExitState
     {
@@ -24,123 +24,28 @@ class Program
         TimeZoneException,
         ApiKeyMissingException,
         OutputPathMissingException,
+        SettingsMissingException,
     }
 
     static async Task Main(string[] args)
     {
         _LoadSettings(args);
 
-        // Check for invalid output path
-        if (Regex.IsMatch(_outputPath, $"[{new string(Path.GetInvalidPathChars())}]\"[{new string(Path.GetInvalidFileNameChars())}]"))
-        {
-            Console.WriteLine("Invalid output path name.");
-            _Quit(ExitState.InvalidPathException);
-        }
+        IEnumerable<Course> currentCourses = Enumerable.Empty<Course>();
 
-        // Get enrolled courses
-        string courseJson = null;
+        Console.WriteLine("Fetching Canvas assignments...");
+
         try
         {
-            courseJson = await _caller.Call("courses?per_page=200");
+            currentCourses = await _builder.GetCoursesFromLatestTerm(new Progress<string>(_UpdateProgress));
         }
         catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
         {
             _HandleCanvasApiException(e);
+            return;
         }
 
-        // Filter courses by term id. A22 term is 186
-        Course[] currentCourses = JsonSerializer.Deserialize<Course[]>(courseJson);
-        int currentTerm = currentCourses.Max(x => x.EnrollmentTermId);
-        currentCourses = currentCourses.Where(c => c.EnrollmentTermId == currentTerm).ToArray();
-
-        // For cross-referencing the assignments with the module item completion status
-        Dictionary<int, ModuleItem> contentIdToModuleItem = new();
-
-        foreach (Course course in currentCourses)
-        {
-            Console.WriteLine($"== {course.Name} ==");
-            Console.WriteLine();
-            Console.WriteLine("| Assignments");
-
-            // Get all assignments for the course
-            string assignmentJson = null;
-            try
-            {
-                assignmentJson = await _caller.Call($"courses/{course.Id}/assignments?per_page=200");
-            }
-            catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
-            {
-                _HandleCanvasApiException(e);
-            }
-            course.Assignments = JsonSerializer.Deserialize<Assignment[]>(assignmentJson);
-
-
-            foreach (Assignment assignment in course.Assignments)
-            {
-                string due = "NO DUE DATE";
-                if (assignment.DueAt != null)
-                {
-                    due = assignment.DueAt.Value.ToString("MM-dd ddd");
-                }
-
-                Console.WriteLine($"| | {assignment.Name} - Due:{due}");
-
-                // Set the parent course property in each assignment
-                assignment.Course = course;
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("| Modules");
-
-            // Get all modules in the course
-            string modulesJson = null;
-            try
-            {
-                modulesJson = await _caller.Call($"courses/{course.Id}/modules?per_page=200");
-            }
-            catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
-            {
-                _HandleCanvasApiException(e);
-            }
-
-            course.Modules = JsonSerializer.Deserialize<Module[]>(modulesJson);
-
-            foreach (Module module in course.Modules)
-            {
-                Console.WriteLine($"| | {module.Name}");
-
-                // Get all items in the module
-                string itemsJson = null;
-                try
-                {
-                    itemsJson = await _caller.Call($"courses/{course.Id}/modules/{module.Id}/items?per_page=200");
-                }
-                catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
-                {
-                    _HandleCanvasApiException(e);
-                }
-
-                module.Items = JsonSerializer.Deserialize<ModuleItem[]>(itemsJson);
-
-                foreach (ModuleItem item in module.Items.Where(x => x.Type == "Assignment"))
-                {
-                    Console.Write($"| | | {item.Name}");
-
-                    // Add the assignment module items to the dictionary for cross-referencing
-                    if(contentIdToModuleItem.TryAdd(item.ContentId, item))
-                    {
-                        Console.WriteLine(" SKIPPED");
-                    }
-                    else
-                    {
-                        Console.WriteLine();
-                    }
-                }
-            }
-
-            Console.WriteLine();
-            Console.WriteLine();
-        }
+        Console.WriteLine(_builder.CoursesToString(currentCourses));
 
         // Get the contents of my todo list file
         List<string> fileContent = new();
@@ -149,22 +54,25 @@ class Program
         {
             fileContent = File.ReadAllLines(_outputPath).ToList();
         }
+        // If the file doesn't exist and there's a header defined,
+        // make a new file with just the header
         else if (!string.IsNullOrEmpty(_header))
         {
             fileContent.Add(_header);
         }
 
+        // If true, reset weekly tasks
         bool weekly = DateTime.Now.DayOfWeek == DayOfWeek.Monday;
 
-        int index = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
+        int headerIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
         int weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _weeklyHeader);
 
         if (string.IsNullOrEmpty(_header))
         {
-            index = 0;
+            headerIndex = 0;
         }
 
-        if (index < 0)
+        if (headerIndex < 0)
         {
             Console.WriteLine($"Could not find line \"{_header}\"");
             _Quit(ExitState.NoHeaderException);
@@ -172,20 +80,25 @@ class Program
 
         StringBuilder sb = new();
 
-        // Only replace content after the "Assignments" header
-        int trimIndex = index;
+        // Only replace content after the header
+        int trimIndex = headerIndex;
+
+        // If we're resetting the weekly todos, set the starting index further back
         if (weekly)
         {
             trimIndex = weeklyIndex;
         }
+
         for (int i = 0; i < trimIndex; i++)
         {
             sb.AppendLine(fileContent[i]);
         }
+
         if (weekly)
         {
-            for (int i = weeklyIndex; i < index; i++)
+            for (int i = weeklyIndex; i < headerIndex; i++)
             {
+                // Clear the todo status
                 sb.AppendLine(fileContent[i].Replace("[x]", "[ ]"));
             }
         }
@@ -199,15 +112,20 @@ class Program
         IEnumerable<Assignment> assignments = from course in currentCourses
                                               from assignment in course.Assignments
                                               where !assignment.Submitted &&
-                                              (assignment.DueAt == null || assignment.DueAt > DateTime.Now) &&
-                                              (!contentIdToModuleItem.ContainsKey(assignment.Id) ||
-                                                !(contentIdToModuleItem[assignment.Id]?.CompletionRequirement?.IsCompleted ?? false))
+                                              //(assignment.DueAt == null || assignment.DueAt > DateTime.Now) &&
+                                              (assignment.ModuleItem == null ||
+                                                !(assignment.ModuleItem?.CompletionRequirement?.IsCompleted ?? false))
+                                              orderby assignment.Name descending
+                                              orderby assignment.DueAt
                                               select assignment;
 
-        Console.WriteLine("***** Future Assignments *****");
+        IEnumerable<Assignment> datedAssignments = assignments.Where(x => x.DueAt != null);
+        IEnumerable<Assignment> undatedAssignments = assignments.Where(x => x.DueAt == null);
+
+        Console.WriteLine("***** Dated Assignments *****");
         Console.WriteLine();
 
-        foreach (var courseGroup in assignments.Where(x => x.DueAt != null).OrderBy(x => x.DueAt).GroupBy<Assignment, Course>(x => x.Course))
+        foreach (var courseGroup in datedAssignments.GroupBy<Assignment, Course>(x => x.Course))
         {
             Console.WriteLine($"== {courseGroup.Key.Name} ==");
 
@@ -235,7 +153,7 @@ class Program
         sb.AppendLine();
 
 
-        foreach (var courseGroup in assignments.Where(x => x.DueAt == null).OrderBy(x => x.Name).GroupBy<Assignment, Course>(x => x.Course))
+        foreach (var courseGroup in undatedAssignments.GroupBy<Assignment, Course>(x => x.Course))
         {
             Console.WriteLine($"== {courseGroup.Key.Name} ==");
 
@@ -269,6 +187,11 @@ class Program
         _Quit(ExitState.Successful);
     }
 
+    private static void _UpdateProgress(string report)
+    {
+        Console.Write($"\r{report}{new String(' ', 20)}");
+    }
+
     private static void _LoadSettings(string[] args)
     {
         if (args.Contains("--silent") || args.Contains("-s"))
@@ -288,9 +211,21 @@ class Program
         }
         else
         {
-            File.WriteAllText("settings.txt", "API Key: <Paste your Canvas API key here>\n" +
+            try
+            {
+                File.WriteAllText("settings.txt", "API Key: <Paste your Canvas API key here>\n" +
                                               "Output Path: <Path to the text file to output to>\n" +
                                               "Header: <The line of text to add the assignments after>\n");
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine($"Error while writing file {Path.GetFullPath("settings.txt")}\n{e.Message}");
+                _Quit(ExitState.FileWriteException);
+            }
+            
+            Console.WriteLine($"Settings file not found. Refer to {Path.GetFullPath("settings.txt")} for more details");
+            _Quit(ExitState.SettingsMissingException);
+
         }
 
         Dictionary<string, string> settingsDict = new();
@@ -303,23 +238,23 @@ class Program
             }
         }
 
-        if (settingsDict.TryGetValue("API Key", out string apiKey))
+        if (settingsDict.TryGetValue("API Key", out string? apiKey) && apiKey != null)
         {
-            _caller = new(apiKey);
+            _builder = new(new(apiKey));
         }
-        if (settingsDict.TryGetValue("Output Path", out string path))
+        if (settingsDict.TryGetValue("Output Path", out string? path) && path != null)
         {
             _outputPath = path;
         }
-        if (settingsDict.TryGetValue("Header", out string header))
+        if (settingsDict.TryGetValue("Header", out string? header) && header != null)
         {
             _header = header;
         }
-        if (settingsDict.TryGetValue("Weekly", out string weekly))
+        if (settingsDict.TryGetValue("Weekly", out string? weekly) && weekly != null)
         {
             _weeklyHeader = weekly;
         }
-        if (settingsDict.TryGetValue("Time Zone", out string tz) && string.IsNullOrEmpty(tz))
+        if (settingsDict.TryGetValue("Time Zone", out string? tz) && string.IsNullOrEmpty(tz))
         {
             try
             {
@@ -332,15 +267,22 @@ class Program
             }
         }
 
-        if (_caller == null)
+        if (_builder == null)
         {
             Console.WriteLine("No API key has been set.");
             _Quit(ExitState.ApiKeyMissingException);
         }
+
         if (string.IsNullOrEmpty(_outputPath))
         {
             Console.WriteLine("No output path has been set.");
             _Quit(ExitState.OutputPathMissingException);
+        }
+
+        if (Regex.IsMatch(_outputPath ?? "", $"[{new string(Path.GetInvalidPathChars())}]\"[{new string(Path.GetInvalidFileNameChars())}]"))
+        {
+            Console.WriteLine("Invalid output path name. The output path may not contain any of the following characters: " + new string(Path.GetInvalidPathChars()));
+            _Quit(ExitState.InvalidPathException);
         }
     }
 

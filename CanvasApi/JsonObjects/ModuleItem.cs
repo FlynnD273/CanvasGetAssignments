@@ -25,6 +25,12 @@ namespace CanvasApi.JsonObjects
         [JsonPropertyName("completion_requirement")]
         public CompletionRequirement CompletionRequirement { get; set; }
 
+        [JsonIgnore]
+        public Course Course { get; set; }
+
+        [JsonIgnore]
+        public Module Module { get; set; }
+
         public override string ToString() => Name;
     }
 }

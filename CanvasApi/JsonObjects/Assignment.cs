@@ -24,6 +24,8 @@ namespace CanvasApi.JsonObjects
 
         [JsonIgnore]
         public Course Course { get; set; }
+        [JsonIgnore]
+        public ModuleItem? ModuleItem { get; set; }
 
         public override string ToString() => Name;
     }
