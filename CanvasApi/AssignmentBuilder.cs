@@ -17,49 +17,6 @@ namespace CanvasApi
             _caller = caller;
         }
 
-        public string CoursesToString(IEnumerable<Course> courses)
-        {
-            StringBuilder sb = new();
-
-            foreach (Course course in courses)
-            {
-                sb.AppendLine($"== {course.Name} ==");
-                sb.AppendLine();
-                sb.AppendLine("| Assignments");
-
-                // Print out assignment due dates
-                foreach (Assignment assignment in course.Assignments)
-                {
-                    string due = "NO DUE DATE";
-                    if (assignment.DueAt != null)
-                    {
-                        due = assignment.DueAt.Value.ToString("MM-dd ddd");
-                    }
-
-                    sb.AppendLine($"| | {assignment.Name} - Due:{due}");
-                }
-
-                sb.AppendLine();
-                sb.AppendLine("| Modules");
-
-                foreach (Module module in course.Modules)
-                {
-                    sb.AppendLine($"| | {module.Name}");
-
-                    foreach (ModuleItem item in module.Items)
-                    {
-                        sb.AppendLine($"| | | {item.Name}{(item.Type == "Assignment" ? "*" : "")}");
-                    }
-                }
-
-                sb.AppendLine();
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("* This is an assignment");
-            return sb.ToString();
-        }
-
         public async Task<Course[]> GetCoursesFromTerm(int term, IProgress<string> progress)
         {
             string? coursesJson = coursesJson = await _caller.Call("courses?per_page=200");

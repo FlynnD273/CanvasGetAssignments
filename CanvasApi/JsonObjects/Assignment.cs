@@ -27,6 +27,15 @@ namespace CanvasApi.JsonObjects
         [JsonIgnore]
         public ModuleItem? ModuleItem { get; set; }
 
-        public override string ToString() => Name;
+        public override string ToString()
+        {
+            string due = "NO DUE DATE";
+            if (DueAt != null)
+            {
+                due = DueAt.Value.ToString("MM-dd ddd");
+            }
+
+            return $"{Name} - Due:{due}";
+        }
     }
 }

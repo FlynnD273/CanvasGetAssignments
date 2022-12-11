@@ -31,6 +31,6 @@ namespace CanvasApi.JsonObjects
         [JsonIgnore]
         public Module Module { get; set; }
 
-        public override string ToString() => Name;
+        public override string ToString() => $"{Name}{(Type == "Assignment" ? "*" : "")}";
     }
 }

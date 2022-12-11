@@ -45,7 +45,14 @@ class Program
             return;
         }
 
-        Console.WriteLine(_builder.CoursesToString(currentCourses));
+        foreach (Course course in currentCourses)
+        {
+            Console.WriteLine(course.ToString());
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("* This is an assignment");
+        Console.WriteLine();
 
         // Get the contents of my todo list file
         List<string> fileContent = new();
