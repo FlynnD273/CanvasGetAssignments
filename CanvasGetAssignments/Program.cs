@@ -146,6 +146,7 @@ class Program
                     if (linkToAssignmentDict.ContainsKey(group.Value))
                     {
                         manuallyCompletedAssignments.Add(group.Value);
+                        break;
                     }
                 }
             }
