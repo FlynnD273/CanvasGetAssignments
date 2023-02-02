@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 
 class Program
 {
+    private const string _manuallyCompletedPath = "manuallycompleted.json";
     private static string _outputPath = "";
     private static string? _header = null;
     private static string? _weeklyHeader = null;
@@ -54,6 +55,23 @@ class Program
         Console.WriteLine("* This is an assignment");
         Console.WriteLine();
 
+        // Find all uncompleted future assignments
+        IEnumerable<Assignment> assignments = from course in currentCourses
+                                              from assignment in course.Assignments
+                                              where !assignment.Submitted &&
+                                              //(assignment.DueAt == null || assignment.DueAt > DateTime.Now) &&
+                                              (assignment.ModuleItem == null ||
+                                                !(assignment.ModuleItem?.CompletionRequirement?.IsCompleted ?? false))
+                                              orderby assignment.Name descending
+                                              orderby assignment.DueAt
+                                              select assignment;
+
+        Dictionary<string, Assignment> linkToAssignmentDict = new();
+        foreach(Assignment assignment in assignments)
+        {
+            linkToAssignmentDict.Add(assignment.HtmlUrl, assignment);
+        }
+
         // Get the contents of my todo list file
         List<string> fileContent = new();
 
@@ -85,6 +103,56 @@ class Program
             _Quit(ExitState.NoHeaderException);
         }
 
+        HashSet<string> manuallyCompletedAssignments;
+
+        if (File.Exists(_manuallyCompletedPath))
+        {
+            using (FileStream stream = File.OpenRead(_manuallyCompletedPath))
+            {
+                try
+                {
+                    manuallyCompletedAssignments = JsonSerializer.Deserialize<HashSet<string>>(stream) ?? new();
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    manuallyCompletedAssignments = new();
+                }
+            }
+
+            foreach (string link in manuallyCompletedAssignments) 
+            {
+                if (!linkToAssignmentDict.ContainsKey(link))
+                {
+                    manuallyCompletedAssignments.Remove(link);
+                }
+            }
+        }
+        else
+        {
+            manuallyCompletedAssignments = new();
+        }
+
+
+        for (int i = headerIndex + 1; i < fileContent.Count; i++)
+        {
+            if (fileContent[i].StartsWith("- [x] "))
+            {
+                var match = Regex.Match(fileContent[i], @"(https:\/\/.*)\)");
+                if (!match.Success) continue;
+
+                foreach(Group group in match.Groups)
+                {
+                    if (linkToAssignmentDict.ContainsKey(group.Value))
+                    {
+                        manuallyCompletedAssignments.Add(group.Value);
+                    }
+                }
+            }
+        }
+
+        File.WriteAllText(_manuallyCompletedPath, JsonSerializer.Serialize(manuallyCompletedAssignments));
+
         StringBuilder sb = new();
 
         // Only replace content after the header
@@ -115,19 +183,8 @@ class Program
         sb.AppendLine($"last updated at `{DateTime.Now:ddd, MM/dd hh:mm tt}`");
         sb.AppendLine();
 
-        // Find all uncompleted future assignments
-        IEnumerable<Assignment> assignments = from course in currentCourses
-                                              from assignment in course.Assignments
-                                              where !assignment.Submitted &&
-                                              //(assignment.DueAt == null || assignment.DueAt > DateTime.Now) &&
-                                              (assignment.ModuleItem == null ||
-                                                !(assignment.ModuleItem?.CompletionRequirement?.IsCompleted ?? false))
-                                              orderby assignment.Name descending
-                                              orderby assignment.DueAt
-                                              select assignment;
-
-        IEnumerable<Assignment> datedAssignments = assignments.Where(x => x.DueAt != null);
-        IEnumerable<Assignment> undatedAssignments = assignments.Where(x => x.DueAt == null);
+        IEnumerable<Assignment> datedAssignments = assignments.Where(x => x.DueAt != null && !manuallyCompletedAssignments.Contains(x.HtmlUrl));
+        IEnumerable<Assignment> undatedAssignments = assignments.Where(x => x.DueAt == null && !manuallyCompletedAssignments.Contains(x.HtmlUrl));
 
         Console.WriteLine("***** Dated Assignments *****");
         Console.WriteLine();
@@ -144,7 +201,7 @@ class Program
             {
                 Console.WriteLine($"| {assignment.Name}");
 
-                string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt.Value, _timeZone).ToString("ddd, MM/dd hh:mm tt");
+                string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
                 // Add the assignment as a checkbox so I can check off items temporarily
                 sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{due}]  ");
             }
