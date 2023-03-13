@@ -238,6 +238,22 @@ class Program
             sb.AppendLine();
         }
 
+        Console.WriteLine("***** Assignments By Due Date *****");
+
+        sb.AppendLine();
+        sb.AppendLine("## Dated Assignments By Due Date");
+        sb.AppendLine();
+
+        IEnumerable<Assignment> duedateAssignments = datedAssignments.OrderBy(x => x.DueAt);
+
+        foreach (var assignment in duedateAssignments)
+        {
+            Console.WriteLine($"| {assignment.Course.Name} - {assignment.Name}");
+            string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
+            // Add the assignment as a checkbox so I can check off items temporarily
+            sb.AppendLine($"- [ ] [due::{due}] [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
+        }
+
         try
         {
             // Write back to the todo file
