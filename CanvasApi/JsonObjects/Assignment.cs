@@ -37,5 +37,20 @@ namespace CanvasApi.JsonObjects
 
             return $"{Name} - Due:{due}";
         }
+
+        public override int GetHashCode()
+        {
+            return HtmlUrl.GetHashCode();
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is Assignment other)
+            {
+                return this.HtmlUrl == other.HtmlUrl;
+            }
+
+            return false;
+        }
     }
 }

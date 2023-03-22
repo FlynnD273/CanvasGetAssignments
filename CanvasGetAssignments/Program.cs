@@ -103,7 +103,7 @@ class Program
             _Quit(ExitState.NoHeaderException);
         }
 
-        HashSet<string> manuallyCompletedAssignments;
+        HashSet<Assignment> manuallyCompletedAssignments;
 
         if (File.Exists(_manuallyCompletedPath))
         {
@@ -111,7 +111,7 @@ class Program
             {
                 try
                 {
-                    manuallyCompletedAssignments = JsonSerializer.Deserialize<HashSet<string>>(stream) ?? new();
+                    manuallyCompletedAssignments = JsonSerializer.Deserialize<HashSet<Assignment>>(stream) ?? new();
                 }
                 catch(Exception ex)
                 {
@@ -120,9 +120,9 @@ class Program
                 }
             }
 
-            foreach (string link in manuallyCompletedAssignments) 
+            foreach (Assignment link in manuallyCompletedAssignments) 
             {
-                if (!linkToAssignmentDict.ContainsKey(link))
+                if (!linkToAssignmentDict.ContainsKey(link.HtmlUrl))
                 {
                     manuallyCompletedAssignments.Remove(link);
                 }
@@ -143,9 +143,9 @@ class Program
 
                 foreach(Group group in match.Groups)
                 {
-                    if (linkToAssignmentDict.ContainsKey(group.Value))
+                    if (linkToAssignmentDict.TryGetValue(group.Value, out Assignment assignment))
                     {
-                        manuallyCompletedAssignments.Add(group.Value);
+                        manuallyCompletedAssignments.Add(assignment);
                         break;
                     }
                 }
@@ -184,8 +184,8 @@ class Program
         sb.AppendLine($"last updated at `{DateTime.Now:ddd, MM/dd hh:mm tt}`");
         sb.AppendLine();
 
-        IEnumerable<Assignment> datedAssignments = assignments.Where(x => x.DueAt != null && !manuallyCompletedAssignments.Contains(x.HtmlUrl));
-        IEnumerable<Assignment> undatedAssignments = assignments.Where(x => x.DueAt == null && !manuallyCompletedAssignments.Contains(x.HtmlUrl));
+        IEnumerable<Assignment> datedAssignments = assignments.Where(x => x.DueAt != null && !manuallyCompletedAssignments.Contains(x));
+        IEnumerable<Assignment> undatedAssignments = assignments.Where(x => x.DueAt == null && !manuallyCompletedAssignments.Contains(x));
 
         Console.WriteLine("***** Dated Assignments *****");
         Console.WriteLine();
