@@ -47,7 +47,7 @@ namespace CanvasApi.JsonObjects
         {
             if (obj is Assignment other)
             {
-                return this.HtmlUrl == other.HtmlUrl;
+                return this.Id == other.Id;
             }
 
             return false;

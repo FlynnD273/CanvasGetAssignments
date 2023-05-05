@@ -32,5 +32,15 @@ namespace CanvasApi.JsonObjects
         public Module Module { get; set; }
 
         public override string ToString() => $"{Name}{(Type == "Assignment" ? "*" : "")}";
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is ModuleItem other)
+            {
+                return this.Id == other.Id;
+            }
+
+            return false;
+        }
     }
 }

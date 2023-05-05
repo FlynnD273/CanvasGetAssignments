@@ -27,5 +27,15 @@ namespace CanvasApi.JsonObjects
         public Course Course { get; set; }
 
         public override string ToString() => Name;
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is Module other)
+            {
+                return this.Id == other.Id;
+            }
+
+            return false;
+        }
     }
 }

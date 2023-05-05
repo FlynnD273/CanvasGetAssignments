@@ -9,8 +9,18 @@ namespace CanvasApi.JsonObjects
 {
     public class Course
     {
+        private int _id;
         [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public int Id 
+        { 
+            get => _id; 
+            set
+            {
+                _id = value;
+                HtmlUrl = $"https://canvas.wpi.edu/courses/{_id}";
+            }
+        }
+
         [JsonPropertyName("name")]
         public string Name { get; set; }
         [JsonPropertyName("account_id")]
@@ -23,6 +33,9 @@ namespace CanvasApi.JsonObjects
         public string CourseCode { get; set; }
         [JsonPropertyName("enrollments")]
         public Enrollment[] Enrollments { get; set; }
+
+        [JsonIgnore]
+        public string HtmlUrl { get; set; }
 
         [JsonIgnore]
         public Assignment[] Assignments { get; set; }
@@ -58,6 +71,16 @@ namespace CanvasApi.JsonObjects
             }
 
             return sb.ToString();
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is Course other)
+            {
+                return other.Id == this.Id;
+            }
+
+            return false;
         }
     }
 }

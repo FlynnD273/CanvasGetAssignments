@@ -1,5 +1,6 @@
 ﻿using CanvasApi;
 using CanvasApi.JsonObjects;
+using CanvasGetAssignments;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -67,7 +68,7 @@ class Program
                                               select assignment;
 
         Dictionary<string, Assignment> linkToAssignmentDict = new();
-        foreach(Assignment assignment in assignments)
+        foreach (Assignment assignment in assignments)
         {
             linkToAssignmentDict.Add(assignment.HtmlUrl, assignment);
         }
@@ -113,14 +114,14 @@ class Program
                 {
                     manuallyCompletedAssignments = JsonSerializer.Deserialize<HashSet<Assignment>>(stream) ?? new();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                     manuallyCompletedAssignments = new();
                 }
             }
 
-            foreach (Assignment link in manuallyCompletedAssignments) 
+            foreach (Assignment link in manuallyCompletedAssignments)
             {
                 if (!linkToAssignmentDict.ContainsKey(link.HtmlUrl))
                 {
@@ -141,7 +142,7 @@ class Program
                 var match = Regex.Match(fileContent[i], @"(https:\/\/.*)\)");
                 if (!match.Success) continue;
 
-                foreach(Group group in match.Groups)
+                foreach (Group group in match.Groups)
                 {
                     if (linkToAssignmentDict.TryGetValue(group.Value, out Assignment assignment))
                     {
@@ -190,15 +191,15 @@ class Program
         Console.WriteLine("***** Dated Assignments *****");
         Console.WriteLine();
 
-        foreach (var courseGroup in datedAssignments.GroupBy<Assignment, Course>(x => x.Course))
+        foreach (Course course in currentCourses)
         {
-            Console.WriteLine($"== {courseGroup.Key.Name} ==");
+            Console.WriteLine($"== {course.Name} ==");
 
             // Add a header for each course
-            sb.AppendLine($"#### {courseGroup.Key.Name}");
+            sb.AppendLine($"#### [{course.Name}]({Url.Combine(course.HtmlUrl, "grades")})");
             sb.AppendLine();
 
-            foreach (var assignment in courseGroup)
+            foreach (var assignment in datedAssignments.Where(x => x.Course == course))
             {
                 Console.WriteLine($"| {assignment.Name}");
 
@@ -211,47 +212,53 @@ class Program
             sb.AppendLine();
         }
 
-        Console.WriteLine("***** Undated Assignments *****");
-
-        sb.AppendLine();
-        sb.AppendLine("## Undated Assignments");
-        sb.AppendLine();
-
-
-        foreach (var courseGroup in undatedAssignments.GroupBy<Assignment, Course>(x => x.Course))
+        if (undatedAssignments.FirstOrDefault() != null)
         {
-            Console.WriteLine($"== {courseGroup.Key.Name} ==");
+            Console.WriteLine("***** Undated Assignments *****");
 
-            // Add a header for each course
-            sb.AppendLine($"#### {courseGroup.Key.Name}");
+            sb.AppendLine();
+            sb.AppendLine("## Undated Assignments");
             sb.AppendLine();
 
-            foreach (var assignment in courseGroup)
+
+            foreach (Course course in currentCourses)
             {
-                Console.WriteLine($"| {assignment.Name}");
+                Console.WriteLine($"== {course.Name} ==");
 
-                // Add the assignment as a checkbox so I can check off items temporarily
-                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::NO DUE DATE]  ");
+                // Add a header for each course
+                sb.AppendLine($"#### [{course.Name}]({Url.Combine(course.HtmlUrl, "grades")})");
+                sb.AppendLine();
+
+                foreach (var assignment in undatedAssignments.Where(x => x.Course == course))
+                {
+                    Console.WriteLine($"| {assignment.Name}");
+
+                    // Add the assignment as a checkbox so I can check off items temporarily
+                    sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::NO DUE DATE]  ");
+                }
+                Console.WriteLine();
+
+                sb.AppendLine();
             }
-            Console.WriteLine();
-
-            sb.AppendLine();
         }
-
-        Console.WriteLine("***** Assignments By Due Date *****");
-
-        sb.AppendLine();
-        sb.AppendLine("## Dated Assignments By Due Date");
-        sb.AppendLine();
 
         IEnumerable<Assignment> duedateAssignments = datedAssignments.OrderBy(x => x.DueAt);
 
-        foreach (var assignment in duedateAssignments)
+        if (duedateAssignments.FirstOrDefault() != null)
         {
-            Console.WriteLine($"| {assignment.Course.Name} - {assignment.Name}");
-            string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
-            // Add the assignment as a checkbox so I can check off items temporarily
-            sb.AppendLine($"- [ ] [due::{due}] [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
+            Console.WriteLine("***** Assignments By Due Date *****");
+
+            sb.AppendLine();
+            sb.AppendLine("## Dated Assignments By Due Date");
+            sb.AppendLine();
+
+            foreach (var assignment in duedateAssignments)
+            {
+                Console.WriteLine($"| {assignment.Course.Name} - {assignment.Name}");
+                string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
+                // Add the assignment as a checkbox so I can check off items temporarily
+                sb.AppendLine($"- [ ] [due::{due}] [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
+            }
         }
 
         try
