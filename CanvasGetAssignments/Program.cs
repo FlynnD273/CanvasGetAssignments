@@ -87,15 +87,20 @@ class Program
             fileContent.Add(_header);
         }
 
-        // If true, reset weekly tasks
-        bool weekly = DateTime.Now.DayOfWeek == DayOfWeek.Monday;
+        int headerIndex = 0;
+        int weeklyIndex = -1;
 
-        int headerIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
-        int weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _weeklyHeader);
-
-        if (string.IsNullOrEmpty(_header))
+        if (!string.IsNullOrEmpty(_weeklyHeader))
         {
-            headerIndex = 0;
+            weeklyIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _weeklyHeader);
+        }
+
+        // If true, reset weekly tasks
+        bool weekly = DateTime.Now.DayOfWeek == DayOfWeek.Monday && weeklyIndex > 0;
+
+        if (!string.IsNullOrEmpty(_header))
+        {
+            headerIndex = fileContent.FindIndex(0, fileContent.Count, x => x == _header);
         }
 
         if (headerIndex < 0)
@@ -302,8 +307,10 @@ class Program
             try
             {
                 File.WriteAllText("settings.txt", "API Key: <Paste your Canvas API key here>\n" +
-                                              "Output Path: <Path to the text file to output to>\n" +
-                                              "Header: <The line of text to add the assignments after>\n");
+                                                  "Output Path: <Path to the text file to output to>\n" +
+                                                  "Header: <The line of text to add the assignments after>\n" +
+                                                  "Weekly: ## Weekly Tasks\n" +
+                                                  "Time Zone: EST\n");
             }
             catch (IOException e)
             {
