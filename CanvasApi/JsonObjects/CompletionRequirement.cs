@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-    public class CompletionRequirement
-    {
-        [JsonPropertyName("type")]
-        public string Type { get; set; }
-        [JsonPropertyName("completed")]
-        public bool IsCompleted { get; set; }
-    }
+		public class CompletionRequirement
+		{
+				[JsonPropertyName("type")]
+				public string Type { get; set; }
+				[JsonPropertyName("completed")]
+				public bool IsCompleted { get; set; }
+		}
 }

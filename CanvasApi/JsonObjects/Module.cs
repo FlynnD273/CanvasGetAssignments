@@ -7,35 +7,35 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-    public class Module
-    {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-        [JsonPropertyName("state")]
-        public string State { get; set; }
-        [JsonPropertyName("items_url")]
-        public string ItemsUrl { get; set; }
-        [JsonPropertyName("items_count")]
-        public int ItemsCount { get; set; }
+		public class Module
+		{
+				[JsonPropertyName("id")]
+				public int Id { get; set; }
+				[JsonPropertyName("name")]
+				public string Name { get; set; }
+				[JsonPropertyName("state")]
+				public string State { get; set; }
+				[JsonPropertyName("items_url")]
+				public string ItemsUrl { get; set; }
+				[JsonPropertyName("items_count")]
+				public int ItemsCount { get; set; }
 
-        [JsonIgnore]
-        public ModuleItem[] Items { get; set; }
+				[JsonIgnore]
+				public ModuleItem[] Items { get; set; }
 
-        [JsonIgnore]
-        public Course Course { get; set; }
+				[JsonIgnore]
+				public Course Course { get; set; }
 
-        public override string ToString() => Name;
+				public override string ToString() => Name;
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is Module other)
-            {
-                return this.Id == other.Id;
-            }
+				public override bool Equals(object? obj)
+				{
+						if (obj is Module other)
+						{
+								return this.Id == other.Id;
+						}
 
-            return false;
-        }
-    }
+						return false;
+				}
+		}
 }

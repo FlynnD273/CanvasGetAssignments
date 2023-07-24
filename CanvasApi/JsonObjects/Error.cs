@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-    public class Error
-    {
-        [JsonPropertyName("message")]
-        public string Message { get; set; }
+		public class Error
+		{
+				[JsonPropertyName("message")]
+				public string Message { get; set; }
 
-        public override string ToString() => Message;
-    }
+				public override string ToString() => Message;
+		}
 }

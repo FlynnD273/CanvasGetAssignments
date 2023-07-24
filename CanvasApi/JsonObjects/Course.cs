@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
@@ -11,9 +7,9 @@ namespace CanvasApi.JsonObjects
     {
         private int _id;
         [JsonPropertyName("id")]
-        public int Id 
-        { 
-            get => _id; 
+        public int Id
+        {
+            get => _id;
             set
             {
                 _id = value;
@@ -43,7 +39,7 @@ namespace CanvasApi.JsonObjects
         [JsonIgnore]
         public Module[] Modules { get; set; }
 
-        public override string ToString ()
+        public override string ToString()
         {
             StringBuilder sb = new();
 
@@ -82,5 +78,10 @@ namespace CanvasApi.JsonObjects
 
             return false;
         }
+
+				public override int GetHashCode()
+				{
+					return Id.GetHashCode();
+				}
     }
 }

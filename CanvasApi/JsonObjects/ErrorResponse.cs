@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-    public class ErrorResponse
-    {
-        [JsonPropertyName("errors")]
-        public Error[] Errors { get; set; }
-    }
+		public class ErrorResponse
+		{
+				[JsonPropertyName("errors")]
+				public Error[] Errors { get; set; }
+		}
 }
