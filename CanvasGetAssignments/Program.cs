@@ -8,7 +8,6 @@ using static System.Environment;
 
 class Program
 {
-    private const string _manuallyCompletedPath = "manuallycompleted.json";
     private static string _outputPath = "";
     private static string? _header = null;
     private static string? _weeklyHeader = null;
@@ -29,7 +28,7 @@ class Program
 
     static async Task Main(string[] args)
     {
-        var builder = _LoadSettings(args);
+        (var builder, var settingsPath) = _LoadSettings(args);
 
         IEnumerable<Course> currentCourses = Enumerable.Empty<Course>();
 
@@ -98,6 +97,7 @@ class Program
 
         HashSet<Assignment> manuallyCompletedAssignments;
 
+				string _manuallyCompletedPath = Path.Join(settingsPath, "manuallycompleted.json");
         if (File.Exists(_manuallyCompletedPath))
         {
             using (FileStream stream = File.OpenRead(_manuallyCompletedPath))
@@ -263,14 +263,14 @@ class Program
         Console.Write($"\r{report}{new String(' ', 20)}");
     }
 
-    private static AssignmentBuilder _LoadSettings(string[] args)
+    private static Tuple<AssignmentBuilder, string> _LoadSettings(string[] args)
     {
         AssignmentBuilder builder = null;
         string[] settings = new string[] { };
         string settingsPath = "";
 
-        string config = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        settingsPath = Path.Join(config, "CanvasGetAssignments", "settings.txt");
+        string configPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CanvasGetAssignments");
+        settingsPath = Path.Join(configPath, "settings.txt");
 
         if (File.Exists(settingsPath))
         {
@@ -370,7 +370,8 @@ class Program
             }
         }
 
-        return builder;
+        string localPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CanvasGetAssignments");
+        return new (builder, localPath);
     }
 
     private static void _HandleCanvasApiException(Exception e)
