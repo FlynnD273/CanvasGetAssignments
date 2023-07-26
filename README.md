@@ -18,14 +18,6 @@ The weekly list must be before the assignments header. The weekly task section r
 Warning!  
 This tool will remove everything after the header in the file, and replace it with the assignments checklist.
 
-## Command-Line Arguments
-
-| Flag | Usage |
-| ---- | ----- |
-| `-s`,`--silent` | When the program ends, exit without prompting for user interaction if no exception was thrown |
-| `-se`, `--silentExceptions` | When the program ends, exit without prompting for user interaction even if an exception was thrown |
-
-
 ## To Build
 
 This was made using Visual Studio 2022 and .NET 6.0. 

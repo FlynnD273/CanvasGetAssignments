@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-		public class Module
+    public class Module
 		{
 				[JsonPropertyName("id")]
 				public int Id { get; set; }
@@ -26,7 +22,18 @@ namespace CanvasApi.JsonObjects
 				[JsonIgnore]
 				public Course Course { get; set; }
 
-				public override string ToString() => Name;
+				public override string ToString()
+				{
+					StringBuilder sb = new();
+					sb.AppendLine("Module: " + Name);
+
+					foreach (ModuleItem item in Items)
+					{
+							sb.AppendLine("\t" + item.ToString());
+					}
+
+					return sb.ToString();
+				}
 
 				public override bool Equals(object? obj)
 				{
@@ -37,5 +44,7 @@ namespace CanvasApi.JsonObjects
 
 						return false;
 				}
+
+				public override int GetHashCode() => Id.GetHashCode();
 		}
 }

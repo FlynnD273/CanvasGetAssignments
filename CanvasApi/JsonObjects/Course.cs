@@ -43,27 +43,16 @@ namespace CanvasApi.JsonObjects
         {
             StringBuilder sb = new();
 
-            sb.AppendLine($"== {Name} ==");
-            sb.AppendLine();
-            sb.AppendLine("| Assignments");
+            sb.AppendLine("Course: " + Name);
 
-            // Print out assignment due dates
             foreach (Assignment assignment in Assignments)
             {
-                sb.AppendLine($"| | {assignment}");
+                sb.AppendLine("\t" + assignment.ToString());
             }
-
-            sb.AppendLine();
-            sb.AppendLine("| Modules");
 
             foreach (Module module in Modules)
             {
-                sb.AppendLine($"| | {module}");
-
-                foreach (ModuleItem item in module.Items)
-                {
-                    sb.AppendLine($"| | | {item}");
-                }
+								sb.AppendLine(module.ToString());
             }
 
             return sb.ToString();

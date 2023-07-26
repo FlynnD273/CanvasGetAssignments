@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Xml.Linq;
+﻿using System.Text.Json.Serialization;
 
 namespace CanvasApi.JsonObjects
 {
-		public class ModuleItem
+    public class ModuleItem
 		{
 				[JsonPropertyName("id")]
 				public int Id { get; set; }
@@ -42,5 +36,7 @@ namespace CanvasApi.JsonObjects
 
 						return false;
 				}
+
+				public override int GetHashCode() => Id.GetHashCode();
 		}
 }
