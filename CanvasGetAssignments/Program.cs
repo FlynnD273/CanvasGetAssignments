@@ -145,6 +145,7 @@ class Program
             }
         }
 
+				Directory.CreateDirectory(Path.GetDirectoryName(_manuallyCompletedPath));
         File.WriteAllText(_manuallyCompletedPath, JsonSerializer.Serialize(manuallyCompletedAssignments));
 
         StringBuilder sb = new();
@@ -280,6 +281,7 @@ class Program
         {
             try
             {
+								Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
                 File.WriteAllText(settingsPath, "API Key: <Paste your Canvas API key here>\n" +
                                                                     "Output Path: <Path to the text file to output to>\n" +
                                                                     "Header: <The line of text to add the assignments after>\n" +
