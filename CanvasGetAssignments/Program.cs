@@ -231,7 +231,7 @@ class Program
 
         IEnumerable<Assignment> duedateAssignments = datedAssignments.OrderBy(x => x.DueAt);
 
-        if (duedateAssignments.FirstOrDefault() != null)
+        if (duedateAssignments.Any())
         {
             sb.AppendLine();
             sb.AppendLine("## Dated Assignments By Due Date");
