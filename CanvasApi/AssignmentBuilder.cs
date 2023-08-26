@@ -12,6 +12,25 @@ namespace CanvasApi
             _caller = caller;
         }
 
+				private string[] _ArrayOfJson (string json)
+				{
+						return JsonSerializer.Deserialize<JsonElement[]>(json)?.Select(x => x.ToString()).ToArray() ?? Array.Empty<string>();
+				}
+
+				private T[] _ParseJson<T> (string json) where T: CanvasApi.JsonObjects.JsonObject
+				{
+						string[] jsons = _ArrayOfJson(json);
+						T[] objs = new T[jsons.Length];
+
+						for (int i = 0; i < objs.Length; i++)
+						{
+								objs[i] = JsonSerializer.Deserialize<T>(jsons[i]);
+								objs[i].JsonContent = jsons[i];
+						}
+
+						return objs;
+				}
+
         public async Task<Course[]> GetCoursesFromTerm(int term, IProgress<string>? progress)
         {
             string? coursesJson = coursesJson = await _caller.Call("courses?per_page=200");
@@ -22,7 +41,7 @@ namespace CanvasApi
             }
 
             // Only keep the courses from the latest term. 
-            Course[] courses = JsonSerializer.Deserialize<Course[]>(coursesJson) ?? Array.Empty<Course>();
+            Course[] courses = _ParseJson<Course>(coursesJson);
 
             courses = courses.Where(c => c.EnrollmentTermId == term).ToArray();
 
@@ -61,7 +80,7 @@ namespace CanvasApi
             }
 
             // Filter courses by term id. Only keep the courses from the latest term. 
-            Course[]? currentCourses = JsonSerializer.Deserialize<Course[]>(coursesJson);
+            Course[]? currentCourses = _ParseJson<Course>(coursesJson);
 
             if (currentCourses == null || currentCourses.Length == 0)
             {
@@ -75,7 +94,7 @@ namespace CanvasApi
         {
             string? modulesJson = await _caller.Call($"courses/{course.Id}/modules?per_page=200");
 
-            Module[] modules = JsonSerializer.Deserialize<Module[]>(modulesJson) ?? Array.Empty<Module>();
+            Module[] modules = _ParseJson<Module>(modulesJson);
 
             for (int i = 0; i < modules.Length; i++)
             {
@@ -94,7 +113,7 @@ namespace CanvasApi
         {
             string? itemsJson = await _caller.Call($"courses/{module.Course.Id}/modules/{module.Id}/items?per_page=200");
 
-            ModuleItem[] moduleItems = JsonSerializer.Deserialize<ModuleItem[]>(itemsJson) ?? Array.Empty<ModuleItem>();
+            ModuleItem[] moduleItems = _ParseJson<ModuleItem>(itemsJson);
 
             foreach (ModuleItem item in moduleItems.Where(x => x.Type == "Assignment"))
             {
@@ -114,7 +133,7 @@ namespace CanvasApi
         {
             string? assignmentJson = await _caller.Call($"courses/{course.Id}/assignments?per_page=200");
 
-            Assignment[] assignments = JsonSerializer.Deserialize<Assignment[]>(assignmentJson) ?? Array.Empty<Assignment>();
+            Assignment[] assignments = _ParseJson<Assignment>(assignmentJson);
 
             foreach (Assignment a in assignments)
             {

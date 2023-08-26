@@ -54,10 +54,11 @@ class Program
         // Find all uncompleted future assignments
         IEnumerable<Assignment> assignments = from course in currentCourses
                                               from assignment in course.Assignments
-                                              where !assignment.Submitted &&
-                                              //(assignment.DueAt == null || assignment.DueAt > DateTime.Now) &&
-                                              (assignment.ModuleItem == null ||
-                                                    !(assignment.ModuleItem?.CompletionRequirement?.IsCompleted ?? false))
+																							where !assignment.IsLocked
+                                              where !assignment.Submitted
+                                              /* where (assignment.DueAt == null || assignment.DueAt > DateTime.Now) && */
+                                              where (assignment.ModuleItem == null ||
+                                                    (!(assignment.ModuleItem?.CompletionRequirement?.IsCompleted ?? false)))
                                               orderby assignment.Name descending
                                               orderby assignment.DueAt
                                               select assignment;
@@ -210,13 +211,16 @@ class Program
 
             foreach (Course course in currentCourses)
             {
+								var courseAssignments = undatedAssignments.Where(x => x.Course == course);
+								if (!courseAssignments.Any()) continue;
+
                 Console.WriteLine("Undated Course: " + course.Name);
 
                 // Add a header for each course
                 sb.AppendLine($"#### [{course.Name}]({Url.Combine(course.HtmlUrl, "grades")})");
                 sb.AppendLine();
 
-                foreach (var assignment in undatedAssignments.Where(x => x.Course == course))
+                foreach (var assignment in courseAssignments)
                 {
                     Console.WriteLine($"Undated Assignment: {assignment.Name}");
 

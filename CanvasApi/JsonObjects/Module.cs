@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace CanvasApi.JsonObjects
 {
-    public class Module
+    public class Module : CanvasApi.JsonObjects.JsonObject
 		{
 				[JsonPropertyName("id")]
 				public int Id { get; set; }

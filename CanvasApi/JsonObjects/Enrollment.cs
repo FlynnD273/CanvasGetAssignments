@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-		public class Enrollment
+		public class Enrollment : CanvasApi.JsonObjects.JsonObject
 		{
 				[JsonPropertyName("type")]
 				public string Type { get; set; }

@@ -2,7 +2,7 @@
 
 namespace CanvasApi.JsonObjects
 {
-    public class ModuleItem
+    public class ModuleItem : CanvasApi.JsonObjects.JsonObject
 		{
 				[JsonPropertyName("id")]
 				public int Id { get; set; }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-		public class CompletionRequirement
+		public class CompletionRequirement : CanvasApi.JsonObjects.JsonObject
 		{
 				[JsonPropertyName("type")]
 				public string Type { get; set; }

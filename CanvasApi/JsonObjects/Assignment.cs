@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CanvasApi.JsonObjects
 {
-		public class Assignment
+		public class Assignment : CanvasApi.JsonObjects.JsonObject
 		{
 				[JsonPropertyName("name")]
 				public string Name { get; set; } = "";
@@ -21,6 +21,8 @@ namespace CanvasApi.JsonObjects
 				public string HtmlUrl { get; set; } = "";
 				[JsonPropertyName("has_submitted_submissions")]
 				public bool Submitted { get; set; }
+				[JsonPropertyName("locked_for_user")]
+				public bool IsLocked { get; set; }
 
 				[JsonIgnore]
 				public Course? Course { get; set; }
