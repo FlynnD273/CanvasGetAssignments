@@ -52,7 +52,7 @@ class Program
 								currentCourses = Array.Empty<Course>();
 								foreach (var termId in _termIds)
 								{
-										currentCourses.Concat(await builder.GetCoursesFromTerm(termId, progress));
+										currentCourses = currentCourses.Concat(await builder.GetCoursesFromTerm(termId, progress));
 								}
 						}
         }
