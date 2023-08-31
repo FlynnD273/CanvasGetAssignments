@@ -54,7 +54,7 @@ class Program
         // Find all uncompleted future assignments
         IEnumerable<Assignment> assignments = from course in currentCourses
                                               from assignment in course.Assignments
-																							where !assignment.IsLocked
+																							/* where !assignment.IsLocked */
                                               where !assignment.Submitted
                                               /* where (assignment.DueAt == null || assignment.DueAt > DateTime.Now) && */
                                               where (assignment.ModuleItem == null ||
@@ -182,6 +182,21 @@ class Program
         IEnumerable<Assignment> datedAssignments = assignments.Where(x => x.DueAt != null && !manuallyCompletedAssignments.Contains(x));
         IEnumerable<Assignment> undatedAssignments = assignments.Where(x => x.DueAt == null && !manuallyCompletedAssignments.Contains(x));
 
+        if (datedAssignments.Any())
+        {
+						IEnumerable<Assignment> duedateAssignments = datedAssignments.OrderBy(x => x.DueAt);
+            sb.AppendLine();
+            sb.AppendLine("## Dated Assignments By Due Date");
+            sb.AppendLine();
+
+            foreach (var assignment in duedateAssignments)
+            {
+                string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
+                // Add the assignment as a checkbox so I can check off items temporarily
+                sb.AppendLine($"- [ ] [due::{due}] [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
+            }
+        }
+
         foreach (Course course in currentCourses)
         {
             Console.WriteLine("Dated Course: " + course.Name);
@@ -230,22 +245,6 @@ class Program
                 Console.WriteLine();
 
                 sb.AppendLine();
-            }
-        }
-
-        IEnumerable<Assignment> duedateAssignments = datedAssignments.OrderBy(x => x.DueAt);
-
-        if (duedateAssignments.Any())
-        {
-            sb.AppendLine();
-            sb.AppendLine("## Dated Assignments By Due Date");
-            sb.AppendLine();
-
-            foreach (var assignment in duedateAssignments)
-            {
-                string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
-                // Add the assignment as a checkbox so I can check off items temporarily
-                sb.AppendLine($"- [ ] [due::{due}] [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
             }
         }
 
