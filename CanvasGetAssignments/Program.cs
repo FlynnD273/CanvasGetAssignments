@@ -73,7 +73,7 @@ class Program
         IEnumerable<Assignment> assignments = from course in currentCourses
                                               from assignment in course.Assignments
 																							/* where !assignment.IsLocked */
-                                              where !assignment.Submitted
+                                              /* where !assignment.Submitted */
                                               /* where (assignment.DueAt == null || assignment.DueAt > DateTime.Now) && */
                                               where (assignment.ModuleItem == null ||
                                                     (!(assignment.ModuleItem?.CompletionRequirement?.IsCompleted ?? false)))
