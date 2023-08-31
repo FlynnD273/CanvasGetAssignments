@@ -31,7 +31,7 @@ namespace CanvasApi
 						return objs;
 				}
 
-        public async Task<Course[]> GetCoursesFromTerm(int term, IProgress<string>? progress)
+        public async Task<IEnumerable<Course>> GetCoursesFromTerm(int term, IProgress<string>? progress)
         {
             string? coursesJson = coursesJson = await _caller.Call("courses?per_page=200");
 
@@ -70,8 +70,8 @@ namespace CanvasApi
             return courses;
         }
 
-        public async Task<Course[]> GetCoursesFromLatestTerm(IProgress<string> progress)
-        {
+				public async Task<IEnumerable<Course>> GetCourses(IProgress<string> progress)
+				{
             string? coursesJson = coursesJson = await _caller.Call("courses?per_page=200");
 
             if (string.IsNullOrEmpty(coursesJson))
@@ -80,15 +80,15 @@ namespace CanvasApi
             }
 
             // Filter courses by term id. Only keep the courses from the latest term. 
-            Course[]? currentCourses = _ParseJson<Course>(coursesJson);
+            Course[]? courses = _ParseJson<Course>(coursesJson);
 
-            if (currentCourses == null || currentCourses.Length == 0)
+            if (courses == null || courses.Length == 0)
             {
                 return Array.Empty<Course>();
             }
 
-            return await GetCoursesFromTerm(currentCourses.Max(x => x.EnrollmentTermId), progress);
-        }
+						return courses;
+				}
 
         private async Task<Module[]> GetAllCourseModules(Dictionary<int, Assignment> contentIdToAssignment, Course course, string progressPrefix, IProgress<string>? progress)
         {

@@ -4,7 +4,6 @@ using CanvasGetAssignments;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using static System.Environment;
 
 class Program
 {
@@ -12,6 +11,7 @@ class Program
     private static string? _header = null;
     private static string? _weeklyHeader = null;
     private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
+		private static int[] _termIds = Array.Empty<int>();
 
     private enum ExitState
     {
@@ -34,9 +34,27 @@ class Program
 
         Console.WriteLine("Fetching Canvas assignments...");
 
+				var progress = new Progress<string>(_UpdateProgress);
+				
+				var tempCourses = await builder.GetCourses(progress);
+				foreach (var c in tempCourses.OrderBy(x => x.EnrollmentTermId))
+				{
+						Console.WriteLine($"{c.Name} | Term ID: {c.EnrollmentTermId}");
+				}
         try
         {
-            currentCourses = await builder.GetCoursesFromLatestTerm(new Progress<string>(_UpdateProgress));
+						if (_termIds.Length == 0)
+						{
+								currentCourses = await builder.GetCoursesFromTerm(tempCourses.Max(x => x.EnrollmentTermId), progress);
+						}
+						else
+						{
+								currentCourses = Array.Empty<Course>();
+								foreach (var termId in _termIds)
+								{
+										currentCourses.Concat(await builder.GetCoursesFromTerm(termId, progress));
+								}
+						}
         }
         catch (Exception e) when (e is CanvasApiException || e is HttpRequestException)
         {
@@ -289,7 +307,8 @@ class Program
                                                                     "Output Path: <Path to the text file to output to>\n" +
                                                                     "Header: <The line of text to add the assignments after>\n" +
                                                                     "Weekly: <The line of text at the top of the weekly tasks checklist>\n" +
-                                                                    "Time Zone: <Local time zone to use for due dates>\n");
+                                                                    "Time Zone: <Local time zone to use for due dates>\n" +
+                                                                    "TermIDs: <The term IDs to include in the list. Leave bkank to use the most recent term ID>\n");
             }
             catch (IOException e)
             {
@@ -327,6 +346,11 @@ class Program
         if (settingsDict.TryGetValue("Weekly", out string? weekly) && weekly != null)
         {
             _weeklyHeader = weekly;
+        }
+        if (settingsDict.TryGetValue("TermIDs", out string? termIds) && termIds != null)
+        {
+						var termIdArr = termIds.Replace(" ", "").Split(",");
+            _termIds = termIdArr.Select(x => int.Parse(x)).ToArray();
         }
         if (settingsDict.TryGetValue("Time Zone", out string? tz) && string.IsNullOrEmpty(tz))
         {
