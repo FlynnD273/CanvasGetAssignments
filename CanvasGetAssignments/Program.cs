@@ -37,7 +37,7 @@ class Program
 				var progress = new Progress<string>(_UpdateProgress);
 				
 				var tempCourses = await builder.GetCourses(progress);
-				foreach (var c in tempCourses.OrderBy(x => x.EnrollmentTermId))
+				foreach (var c in tempCourses.OrderBy(x => x.EnrollmentTermId).Reverse())
 				{
 						Console.WriteLine($"{c.Name} | Term ID: {c.EnrollmentTermId}");
 				}
@@ -308,7 +308,7 @@ class Program
                                                                     "Header: <The line of text to add the assignments after>\n" +
                                                                     "Weekly: <The line of text at the top of the weekly tasks checklist>\n" +
                                                                     "Time Zone: <Local time zone to use for due dates>\n" +
-                                                                    "TermIDs: <The term IDs to include in the list. Leave bkank to use the most recent term ID>\n");
+                                                                    "Term IDs: <The term IDs to include in the list. Leave bkank to use the most recent term ID>\n");
             }
             catch (IOException e)
             {
@@ -347,7 +347,7 @@ class Program
         {
             _weeklyHeader = weekly;
         }
-        if (settingsDict.TryGetValue("TermIDs", out string? termIds) && termIds != null)
+        if (settingsDict.TryGetValue("Term IDs", out string? termIds) && termIds != null)
         {
 						var termIdArr = termIds.Replace(" ", "").Split(",");
             _termIds = termIdArr.Select(x => int.Parse(x)).ToArray();
