@@ -36,8 +36,8 @@ class Program
 
 				var progress = new Progress<string>(_UpdateProgress);
 				
-				var tempCourses = await builder.GetCourses(progress);
-				foreach (var c in tempCourses.OrderBy(x => x.EnrollmentTermId).Reverse())
+				var courseList = await builder.GetShallowCourses();
+				foreach (var c in courseList.OrderBy(x => x.EnrollmentTermId).Reverse())
 				{
 						Console.WriteLine($"{c.Name} | Term ID: {c.EnrollmentTermId}");
 				}
@@ -45,14 +45,16 @@ class Program
         {
 						if (_termIds.Length == 0)
 						{
-								currentCourses = await builder.GetCoursesFromTerm(tempCourses.Max(x => x.EnrollmentTermId), progress);
+								var latestTerm = courseList.Max(x => x.EnrollmentTermId);
+								currentCourses = await builder.GetCoursesFromTerm(latestTerm, progress);
 						}
 						else
 						{
 								currentCourses = Array.Empty<Course>();
 								foreach (var termId in _termIds)
 								{
-										currentCourses = currentCourses.Concat(await builder.GetCoursesFromTerm(termId, progress));
+										var termCourses = await builder.GetCoursesFromTerm(termId, progress);
+										currentCourses = currentCourses.Concat(termCourses);
 								}
 						}
         }

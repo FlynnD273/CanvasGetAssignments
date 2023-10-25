@@ -70,7 +70,7 @@ namespace CanvasApi
             return courses;
         }
 
-				public async Task<IEnumerable<Course>> GetCourses(IProgress<string> progress)
+				public async Task<IEnumerable<Course>> GetShallowCourses()
 				{
             string? coursesJson = coursesJson = await _caller.Call("courses?per_page=200");
 
@@ -79,7 +79,6 @@ namespace CanvasApi
                 return Array.Empty<Course>();
             }
 
-            // Filter courses by term id. Only keep the courses from the latest term. 
             Course[]? courses = _ParseJson<Course>(coursesJson);
 
             if (courses == null || courses.Length == 0)
