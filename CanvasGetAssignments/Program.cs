@@ -213,7 +213,7 @@ class Program
             {
                 string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
                 // Add the assignment as a checkbox so I can check off items temporarily
-                sb.AppendLine($"- [ ] [due::{due}] [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
+                sb.AppendLine($"- [ ] **{due}** [*{assignment.Course.Name}* - {assignment.Name}]({assignment.HtmlUrl})");
             }
         }
 
@@ -231,7 +231,7 @@ class Program
 
                 string due = TimeZoneInfo.ConvertTimeFromUtc(assignment.DueAt ?? DateTime.MinValue, _timeZone).ToString("ddd, MM/dd hh:mm tt");
                 // Add the assignment as a checkbox so I can check off items temporarily
-                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) [due::{due}]  ");
+                sb.AppendLine($"- [ ] [{assignment.Name}]({assignment.HtmlUrl}) **{due}**  ");
             }
             Console.WriteLine();
 
