@@ -330,6 +330,7 @@ class Program
             {
                 string[] setting = line.Split(':');
                 settingsDict.Add(setting[0].Trim(), string.Join(":", setting.Skip(1)).Trim());
+								Console.WriteLine(setting[0].Trim(), string.Join(":", setting.Skip(1)).Trim());
             }
         }
 
@@ -354,7 +355,7 @@ class Program
 						var termIdArr = termIds.Replace(" ", "").Split(",");
             _termIds = termIdArr.Select(x => int.Parse(x)).ToArray();
         }
-        if (settingsDict.TryGetValue("Time Zone", out string? tz) && string.IsNullOrEmpty(tz))
+        if (settingsDict.TryGetValue("Time Zone", out string? tz) && !string.IsNullOrEmpty(tz))
         {
             try
             {
