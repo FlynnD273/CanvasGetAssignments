@@ -295,6 +295,7 @@ class Program
 
         string configPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CanvasGetAssignments");
         settingsPath = Path.Join(configPath, "settings.txt");
+				Console.WriteLine($"Reading settings from {settingsPath}");
 
         if (File.Exists(settingsPath))
         {
